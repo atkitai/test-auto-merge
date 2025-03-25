@@ -1,0 +1,50 @@
+name: Auto Merge on Push
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # Required for commenting on PRs
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Ensures history is available for merge checking
+
+      - name: Set up Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Check for merge conflicts
+        id: check_merge
+        run: |
+          git fetch origin main
+          git merge --no-commit --no-ff origin/main || echo "conflict" > conflict.txt
+
+      - name: Auto-merge changes
+        if: "!(-e conflict.txt)"
+        run: |
+          git commit -m "🔄 Auto-merged changes into main [skip ci]"
+          git push origin main
+
+      - name: Comment on PR if there is a conflict
+        if: "(-e conflict.txt)"
+        uses: mshick/add-pr-comment@v2
+        with:
+          message: |
+            ❌ **Merge Conflict Detected!**
+            This push could not be auto-merged into `main` because of conflicts.
+            Please resolve the conflicts manually.
+
+      - name: Fail if there is a conflict
+        if: "(-e conflict.txt)"
+        run: |
+          echo "Merge conflict detected, manual resolution required."
+          exit 1
