@@ -9,7 +9,8 @@ jobs:
   auto-merge:
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: write  # Required for commenting on PRs
+      contents: write  # Permission to commit and push changes to the repository
+      pull-requests: write  # Permission to comment on PRs
 
     steps:
       - name: Checkout the repository
@@ -35,7 +36,7 @@ jobs:
       - name: Auto-merge changes
         if: env.conflict == 'false'
         run: |
-          git commit -m "🔄 Auto-merged changes into main [skip ci]"
+          git commit -m "🔄 Auto-merged changes into main [skip ci]" || echo "No changes to commit"
           git push origin main
 
       - name: Comment on PR if there is a conflict
