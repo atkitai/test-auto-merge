@@ -26,16 +26,20 @@ jobs:
         id: check_merge
         run: |
           git fetch origin main
-          git merge --no-commit --no-ff origin/main || echo "conflict" > conflict.txt
+          if git merge --no-commit --no-ff origin/main; then
+            echo "conflict=false" >> $GITHUB_ENV
+          else
+            echo "conflict=true" >> $GITHUB_ENV
+          fi
 
       - name: Auto-merge changes
-        if: "!(-e conflict.txt)"
+        if: env.conflict == 'false'
         run: |
           git commit -m "🔄 Auto-merged changes into main [skip ci]"
           git push origin main
 
       - name: Comment on PR if there is a conflict
-        if: "(-e conflict.txt)"
+        if: env.conflict == 'true'
         uses: mshick/add-pr-comment@v2
         with:
           message: |
@@ -44,7 +48,7 @@ jobs:
             Please resolve the conflicts manually.
 
       - name: Fail if there is a conflict
-        if: "(-e conflict.txt)"
+        if: env.conflict == 'true'
         run: |
           echo "Merge conflict detected, manual resolution required."
           exit 1
